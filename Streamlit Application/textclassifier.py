@@ -4,7 +4,7 @@ import joblib
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from peft import PeftModel
 
-# === Save Function (optional: only if you need to re-save models) ===
+# === Save Function
 def save_model_components(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, encoder, save_path: str = "final_model"):
     os.makedirs(save_path, exist_ok=True)
     model.save_pretrained(save_path)  # Saves the LoRA adapter
@@ -21,7 +21,7 @@ def load_model_components(save_path="D:/SONDOS/NLP Cellula/WEEK 2/toxic-classifi
     encoder_path = os.path.join(save_path, "label_encoder.pkl")
     encoder = joblib.load(encoder_path)
 
-    model.eval()  # inference mode
+    model.eval()  
     return model, tokenizer, encoder
 
 
@@ -36,4 +36,5 @@ def classify_text(text, model, tokenizer, encoder):
     predicted_class_id = probs.argmax()
     label = encoder.inverse_transform([predicted_class_id])[0]
     return label, dict(zip(encoder.classes_, probs.round(3)))
+
 
