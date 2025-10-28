@@ -1,1 +1,45 @@
 
+import streamlit as st 
+import pandas as pd
+import tempfile
+from textclassifier import load_model_components, classify_text
+from imagecaption import generate_caption
+
+# Load model once
+model_path = "final_model"
+model, tokenizer, encoder = load_model_components(model_path)
+
+st.title("Toxic Content Classifier")
+st.caption("Classify text or image content as safe or unsafe using DistilBERT + LoRA")
+
+mode = st.radio("Choose Input Type", ["Text", "Image"])
+
+if mode == "Text":
+    user_text = st.text_area("Enter your comment, caption, or sentence:")
+    if st.button("Classify Text") and user_text.strip():
+        label, scores = classify_text(user_text, model, tokenizer, encoder)
+        st.markdown(f"Prediction: `{label}`")
+        st.json(scores)
+        st.success("Classification complete!")
+        st.session_state.setdefault("log", []).append(["Text", user_text, label])
+
+elif mode == "Image":
+    uploaded_image = st.file_uploader("Upload an image (JPEG/PNG)", type=["jpg", "jpeg", "png"])
+    if uploaded_image:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp:
+            temp.write(uploaded_image.read())
+            temp.flush()
+            caption = generate_caption(temp.name)
+            st.image(temp.name, caption="Uploaded Image")
+            st.markdown(f"Generated Caption: `{caption}`")
+
+            label = classify_text(caption, model, tokenizer, encoder)
+            st.markdown(f"Prediction: `{label}`")
+            st.success("Classification complete!")
+            st.session_state.setdefault("log", []).append(["Image", caption, label])
+
+if "log" in st.session_state:
+    st.markdown("---")
+    st.subheader("Classification Log")
+    df = pd.DataFrame(st.session_state["log"], columns=["Type", "Input", "Label"])
+    st.dataframe(df)
